@@ -1,0 +1,240 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block contenido2 %}
+ <!-- Animated -->
+
+<div class="" id="app2">
+        <vs-button color="success" @click="activePrompt2 = true" type="filled" icon="">Añadir</vs-button>
+        <template lang="html">
+                <div>
+                  <vs-table :data="misiones" style="
+                  margin-bottom: 47px; ">
+                    <template slot="header">
+                      <h3 style="margin: 12px;">
+                        Misiones
+                      </h3>
+                    </template>
+                    <template slot="thead">
+                      <vs-th>
+                        ID
+                      </vs-th>
+                      <vs-th>
+                        Nombre
+                      </vs-th>
+                      <vs-th>
+                        Comandante
+                      </vs-th>
+                      <vs-th>
+                        Estado
+                      </vs-th>
+                      <vs-th>
+                            Fecha Creación
+                        </vs-th>
+                        <vs-th>
+                            Editar
+                        </vs-th>
+                        <vs-th>
+                                    Eliminar
+                            </vs-th>
+                    </template>
+              
+                    <template slot-scope="{data}">
+                      <vs-tr :key="indextr" v-for="(tr, indextr) in data" >
+                        <vs-td :data="data[indextr].id">
+                          ${data[indextr].id}
+                        </vs-td>
+              
+                        <vs-td :data="data[indextr].nombre">
+                          ${data[indextr].nombre}
+                        </vs-td>
+              
+                        <vs-td :data="data[indextr].comandante">
+                          ${data[indextr].comandante}
+                        </vs-td>
+                        <vs-td :data="data[indextr].estado">
+                                ${data[indextr].estado}
+                        </vs-td>
+                        <vs-td :data="data[indextr].fecha_inicio">
+                          ${data[indextr].fecha_inicio}
+                        </vs-td>
+                        <vs-td :data="data[indextr].fecha_inicio">
+                                <vs-button color="primary" type="border" >Editar</vs-button>
+                              </vs-td>
+                        <vs-td :data="data[indextr].id">
+                                <vs-button color="danger" type="border" >Eliminar</vs-button>
+                        </vs-td>
+                        
+                        
+                      </vs-tr>
+                    </template>
+                  </vs-table>
+                </div>
+              </template>
+
+              <div class="centerx con-exemple-prompt">
+                    <div class="modelx">
+                
+                     <vs-prompt color="dark" @cancel="valMultipe.value1='',valMultipe.value2=''"  @accept="acceptAlert" @close="close" :is-valid="validName" :active.sync="activePrompt2">
+                       <div class="con-exemple-prompt">
+                        Llene los campos a continuacion <b>para continuar</b>.
+                         <vs-input placeholder="Name" v-model="valMultipe.value1"/>
+                         <vs-input placeholder="Last Name" v-model="valMultipe.value2"/>
+                
+                         <vs-alert :active="!validName" color="danger" icon="new_releases" >
+                           Fields can not be empty please enter the data
+                         </vs-alert>
+                       </div>
+                     </vs-prompt>
+                  </div>
+              </div>
+</div>
+
+
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/series-label.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/modules/export-data.js"></script>
+<script src="https://code.highcharts.com/modules/data.js"></script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver" crossorigin="anonymous"></script>
+
+
+<!-- Load Vue followed by BootstrapVue -->
+<script src="https://unpkg.com/vue"></script>
+<script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/vuesax"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+
+<script>
+    new Vue({
+      el: '#app2',
+      delimiters: ['${','}'],
+      data: {
+        token:"{{ csrf_token }}",
+        usuario:"{{user.username}}",
+        value:'',
+        inputform:true,
+        inputform2:false,
+        host_mqtt:'broker.hivemq.com',
+        port_mqtt:8000,
+        topic_mqtt:'calidad/cliente',
+        client:{},
+        medicion:{
+            temperatura:0,
+            humedad:0,
+            gas:0,
+            concentracion:0
+        },
+        mision: {
+            id:0,
+            nombre:"",
+            comandante:"",
+            fecha: "",
+            estado:"",
+            estadoBool:false
+        },
+        activePrompt:false,
+        activePrompt2:false,
+        val:'',
+        valMultipe:{
+        value1:'',
+        value2:''
+      },
+      
+        misiones:[
+        ]
+        
+      },
+      computed:{
+        validName(){
+          return (this.valMultipe.value1.length > 0 && this.valMultipe.value2.length > 0)
+        }
+      },
+      created: function () {
+        this.loadData()
+        // this.crearConexion()
+
+        console.log("rey")
+       
+    },
+      methods: {
+        acceptAlert(color){
+      this.$vs.notify({
+        color:'success',
+        title:'Accept Selected',
+        text:'Lorem ipsum dolor sit amet, consectetur'
+      })
+    },
+    close(){
+      this.$vs.notify({
+        color:'danger',
+        title:'Closed',
+        text:'You close a dialog!'
+      })
+    },
+        loadData(){
+            obj = this
+            axios.get('/misiones/min').then(function (response) {
+                var data =  response.data.data
+                console.log(data)
+                var estado = ""
+                for(key in data){
+                   
+                    if(data[key].estado==true){
+                        estado = "Activa"
+                    }else{
+                        estado = "Inactiva"
+                    }
+                    date = new Date (data[key].fecha_creacion)
+
+                    row_mision = {
+                        id : key,
+                        nombre: data[key].nombre,
+                        comandante:data[key].comandante.get_full_name,
+                        estado:estado,
+                        fecha_inicio: date.getDate() + "/" + date.getMonth() + "/" + date.getFullYear() + "   " + date.getHours()+ ":" + date.getMinutes()+ ":" + date.getSeconds(),
+                    }
+                    obj.misiones.push(row_mision)
+                }
+                
+              
+            }).catch(function (error) {
+                obj.$vs.notify({title:'Error',text:'Ha ocurrido un error cargando los recursos',color:'danger'})
+                console.log(error)
+            })
+        },
+        crearConexion() {
+            // obj.$vs.notify({title:'Creando...',text:'Creando cliente de mqtt',color:'success'})
+            this.client = new Paho.MQTT.Client(this.host_mqtt, Number(this.port_mqtt), this.usuario)
+            // console.log(this.client)
+            // obj.$vs.notify({title:'Creado...',text:'Cliente creado de forma exitosa',color:'success'})
+            this.client.onConnectionLost = this.onConnectionLost
+            this.client.onMessageArrived = this.onMessageArrived
+            // obj.$vs.notify({title:'conectando...',text:'Conectando con el broker',color:'success'})
+            this.client.connect({ 
+                onSuccess: this.onConnect
+            })
+        },
+        onConnect() {
+            // obj.$vs.notify({title:'conectado...',text:'cliente conectado al broker',color:'success'})
+            obj = this
+            // obj.$vs.notify({title:'Topic...',text:'Conectando al topic de escucha',color:'success'})
+            // console.log(this.client)
+            obj.client.subscribe('calidad/cliente',{qos: 1})
+            obj.$vs.notify({title:'Conectado...',text:'Conectado al topic de escucha y recibiendo datos',color:'success'})
+        },
+        onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.log("onConnectionLost:" + responseObject.errorMessage)
+            }
+        },
+    
+      }
+    })
+  </script>
+  
+  </script>
+
+{% endblock %}
+
